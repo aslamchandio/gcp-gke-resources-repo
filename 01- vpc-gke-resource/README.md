@@ -43,9 +43,9 @@ gcloud compute networks list
 
 ```
 
-. NETWORK: a name for the VPC network.
-. DYNAMIC_ROUTING_MODE: controls the behavior of Cloud Routers in the   network. Can be either global or regional. The default is regional. For more information, see dynamic routing mode.
-. MTU: the maximum transmission unit (MTU), which is the largest packet size of the network. MTU can be set to any value from 1300 to 8896. The default is 1460. Before setting the MTU to a value higher than 1460, review Maximum transmission unit.
+1- NETWORK: a name for the VPC network.
+2- DYNAMIC_ROUTING_MODE: controls the behavior of Cloud Routers in the   network. Can be either global or regional. The default is regional. For more information, see dynamic routing mode.
+3- MTU: the maximum transmission unit (MTU), which is the largest packet size of the network. MTU can be set to any value from 1300 to 8896. The default is 1460. Before setting the MTU to a value higher than 1460, review Maximum transmission unit.
 
 Next, add subnets to your network.
 
@@ -250,5 +250,201 @@ gcloud compute networks subnets create k8s-vpc-sub6-me-central1 \
   --enable-flow-logs \
   --enable-private-ip-google-access 
 
+```
+
+## Firewalls Rules for VPC
+
+### SSH Allow Firewall Rule
+
+```
+gcloud compute firewall-rules create k8s-fw-ssh-allow \
+    --network k8s-vpc \
+    --action allow \
+    --direction ingress \
+    --rules tcp:22,icmp \
+    --source-ranges 39.57.176.9/32 \
+    --priority 1000 \
+    --enable-logging \
+    --target-tags k8s-ssh-allow
+
+gcloud compute firewall-rules list --filter network:k8s-vpc
+gcloud compute firewall-rules describe k8s-vpc-ssh-allow
+
+```
+
+### RDP Allow Firewall Rule
+
+```
+gcloud compute firewall-rules create k8s-fw-rdp-allow \
+    --network k8s-vpc \
+    --action allow \
+    --direction ingress \
+    --rules tcp:3389,icmp \
+    --source-ranges 39.57.176.9/32 \
+    --priority 1100 \
+    --enable-logging \
+    --target-tags k8s-rdp-allow
+
+gcloud compute firewall-rules list --filter network:k8s-vpc
+gcloud compute firewall-rules describe k8s-vpc-rdp-allow    
+
+```
+
+### Internal ALLow for Subnets Firewall Rule
+
+```
+gcloud compute firewall-rules create k8s-fw-internal-allow \
+    --network k8s-vpc \
+    --action allow \
+    --direction ingress \
+    --rules tcp,udp,icmp,ipip \
+    --source-ranges 192.168.16.0/20,192.168.32.0/20,172.22.1.0/24,172.22.2.0/24,172.22.3.0/24,172.22.4.0/24 \
+    --enable-logging \
+    --priority 1200
+
+ OR
+
+ gcloud compute firewall-rules create k8s-fw-internal-allow \
+    --network k8s-vpc \
+    --action allow \
+    --direction ingress \
+    --rules tcp,udp,icmp,ipip \
+    --source-ranges 192.168.0.0/16,172.22.0.0/16,10.0.0.0/8 \
+    --enable-logging \
+    --priority 1200 
+
+gcloud compute firewall-rules list --filter network:k8s-vpc
+gcloud compute firewall-rules describe k8s-vpc-internal-allow    
+
+  
+```
+
+### IAP ALLow  Firewall Rule
+
+```
+gcloud compute firewall-rules create k8s-fw-iap-allow \
+    --network k8s-vpc \
+    --action allow \
+    --direction ingress \
+    --rules tcp:22,tcp:3389,tcp:3306 \
+    --source-ranges 35.235.240.0/20 \
+    --enable-logging \
+    --priority 1300
+  
+
+```
+
+### HTTP ALLow  Firewall Rule
+
+```
+gcloud compute firewall-rules create k8s-fw-http-allow \
+    --network k8s-vpc \
+    --action allow \
+    --direction ingress \
+    --rules tcp:80,tcp:443,tcp:8080,tcp:9090 \
+    --source-ranges 0.0.0.0/0 \
+    --enable-logging \
+    --priority 1400 \
+    --target-tags k8s-http-allow 
+
+gcloud compute firewall-rules list --filter network:k8s-vpc
+gcloud compute firewall-rules describe k8s-vpc-http-allow     
+  
+
+```
+
+### NodePort ALLow  Firewall Rule
+
+```
+gcloud compute firewall-rules create k8s-fw-node-port-allow \
+    --network k8s-vpc \
+    --action allow \
+    --direction ingress \
+    --rules tcp:30000-32768 \
+    --source-ranges 0.0.0.0/0 \
+    --enable-logging \
+    --priority 1500 
+
+gcloud compute firewall-rules describe k8s-vpc-http-allow    
+  
+
+```
+
+### ArgoCD ALLow  Firewall Rule
+
+```
+
+gcloud compute firewall-rules create k8s-fw-iap-argocd-allow \
+    --network k8s-vpc \
+    --action allow \
+    --direction ingress \
+    --rules tcp:30000-32768 \
+    --source-ranges 35.235.240.0/20 \
+    --priority 1600 
+
+gcloud compute firewall-rules list --filter network:k8s-vpc   
+  
+```
+
+## Cloud NAT Overview
+
+
+### What this does?
+
+Cloud NAT provides network address translation (NAT) for outbound traffic to the internet, Virtual Private Cloud (VPC) networks, on-premises networks, and other cloud provider networks.
+
+Cloud NAT provides NAT for the following Google Cloud resources:
+
+1- Compute Engine virtual machine (VM) instances
+2- Private Google Kubernetes Engine (GKE) clusters
+3- Cloud Run instances through Serverless VPC Access or Direct VPC egress
+4- Cloud Run functions instances through Serverless VPC Access
+5- App Engine standard environment instances through Serverless VPC Access
+
+Cloud NAT supports address translation for established inbound response packets only. It doesn't allow unsolicited inbound connections.
+
+### NatGW for Private Nodes in GKE:
+
+#### Cloud NAT for Region 1
+
+```
+gcloud compute addresses create natgw-gke-pip-us-central1  \
+    --region us-central1
+
+gcloud compute addresses list
+
+gcloud compute addresses describe natgw-gke-pip-us-central1 --region us-central1
+
+gcloud compute routers create gke-nat-router-us-central1 \
+    --network k8s-vpc \
+    --region us-central1
+
+gcloud compute routers list
+
+Note : For All Subnet
+
+gcloud compute routers nats create gke-natgw-us-central1 \
+    --router gke-nat-router-us-central1 \
+    --region us-central1 \
+    --nat-external-ip-pool natgw-gke-pip-us-central1 \
+    --nat-all-subnet-ip-ranges \
+    --min-ports-per-vm 128 \
+    --max-ports-per-vm 512 \
+    --enable-logging
+
+Note : For only one Subnet
+
+gcloud compute routers nats create gke-natgw-us-central1 \
+    --router gke-nat-router-us-central1 \
+    --region us-central1 \
+    --nat-external-ip-pool natgw-gke-pip-us-central1 \
+    --nat-custom-subnet-ip-ranges k8s-vpc-subnet-us-central1 \
+    --min-ports-per-vm 128 \
+    --max-ports-per-vm 512 \
+    --enable-logging
+
+
+gcloud compute routers nats list --router gke-nat-router-us-central1 --region us-central1
+gcloud compute routers nats describe gke-natgw-us-central1 --router gke-nat-router-us-central1 --region us-central1
 
 ```
