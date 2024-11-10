@@ -145,8 +145,8 @@ gcloud container clusters create public-cluster2 \
 ```
 gcloud container clusters list
 
-gcloud container clusters delete private-cluster1 --region us-central1
-gcloud container clusters delete private-cluster2 --region us-west1
+gcloud container clusters delete public-cluster1 --region us-central1
+gcloud container clusters delete public-cluster2 --region us-west1
 
 ```
 
