@@ -499,7 +499,7 @@ gcloud container clusters delete private-cluster3 --zone us-central1-c
 ```
 
 
-### Delete Service Account
+### Delete Client Vms
 
 ```
 gcloud compute instances list
@@ -517,6 +517,83 @@ gcloud iam service-accounts list
 gcloud iam service-accounts delete gke-sa@dev-project-786111.iam.gserviceaccount.com
 
 ```
+### NatGW for Private Nodes in GKE:
 
+#### Cloud NAT for Region 1
+
+```
+gcloud compute addresses create natgw-gke-pip-us-central1  \
+    --region us-central1
+
+gcloud compute addresses list
+
+gcloud compute addresses describe natgw-gke-pip-us-central1 --region us-central1
+
+gcloud compute routers create gke-nat-router-us-central1 \
+    --network k8s-vpc \
+    --region us-central1
+
+gcloud compute routers list
+
+Note : For All Subnet
+
+gcloud compute routers nats create gke-natgw-us-central1 \
+    --router gke-nat-router-us-central1 \
+    --region us-central1 \
+    --nat-external-ip-pool natgw-gke-pip-us-central1 \
+    --nat-all-subnet-ip-ranges \
+    --min-ports-per-vm 128 \
+    --max-ports-per-vm 512 \
+    --enable-logging
+
+Note : For only one Subnet
+
+gcloud compute routers nats create gke-natgw-us-central1 \
+    --router gke-nat-router-us-central1 \
+    --region us-central1 \
+    --nat-external-ip-pool natgw-gke-pip-us-central1 \
+    --nat-custom-subnet-ip-ranges k8s-vpc-subnet-us-central1 \
+    --min-ports-per-vm 128 \
+    --max-ports-per-vm 512 \
+    --enable-logging
+
+
+gcloud compute routers nats list --router gke-nat-router-us-central1 --region us-central1
+gcloud compute routers nats describe gke-natgw-us-central1 --router gke-nat-router-us-central1 --region us-central1
+
+```
+
+#### Cloud NAT for Region 2
+
+```
+gcloud compute addresses create natgw-gke-pip-us-west1  \
+    --region us-west1
+
+gcloud compute addresses list
+
+gcloud compute addresses describe natgw-gke-pip-us-west1 --region us-west1
+
+gcloud compute routers create gke-nat-router-us-west1 \
+    --network k8s-vpc \
+    --region us-west1
+
+gcloud compute routers list
+
+Note : For All Subnet
+
+gcloud compute routers nats create gke-natgw-us-west1 \
+    --router gke-nat-router-us-west1 \
+    --region us-west1 \
+    --nat-external-ip-pool natgw-gke-pip-us-west1 \
+    --nat-all-subnet-ip-ranges \
+    --min-ports-per-vm 128 \
+    --max-ports-per-vm 512 \
+    --enable-logging
+
+
+gcloud compute routers nats list --router gke-nat-router-us-west1 --region us-west1
+gcloud compute routers nats describe gke-natgw-us-west1 --router gke-nat-router-us-west1 --region us-west1
+
+```
 
 
