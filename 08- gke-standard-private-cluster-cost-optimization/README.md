@@ -306,7 +306,7 @@ gcloud container node-pools describe nodepool-02 --cluster private-cluster1  --r
 
 ```
 
-# Autoscaling a Cluster in GKE Private Cluster
+### Autoscaling a Cluster in GKE Private Cluster
 
 ```
 gcloud container clusters update private-cluster1 \

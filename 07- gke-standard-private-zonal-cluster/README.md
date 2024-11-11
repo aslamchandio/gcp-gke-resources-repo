@@ -292,7 +292,7 @@ kubectx
 #### Create K8s-VM
 
 ```
-gcloud compute instances create k8s-client \
+gcloud compute instances create k8s-client1 \
     --zone me-central1-a \
     --image-family ubuntu-2204-lts \
     --image-project ubuntu-os-cloud \
@@ -360,7 +360,7 @@ gcloud container clusters create private-cluster2 \
 #### Create K8s-VM on US-West1
 
 ```
-gcloud compute instances create k8s-client1 \
+gcloud compute instances create k8s-client2 \
     --zone us-west1-b \
     --image-family ubuntu-2204-lts \
     --image-project ubuntu-os-cloud \
@@ -495,6 +495,26 @@ gcloud container clusters list
 gcloud container clusters delete private-cluster1 --zone us-central1-f
 gcloud container clusters delete private-cluster2 --zone us-west1-a
 gcloud container clusters delete private-cluster3 --zone us-central1-c
+
+```
+
+
+### Delete Service Account
+
+```
+gcloud compute instances list
+
+gcloud compute instances delete k8s-clien1 --zone me-central1-a 
+gcloud compute instances delete k8s-client2 --zone us-west1-b
+
+```
+
+### Delete Service Account
+
+```
+gcloud iam service-accounts list
+
+gcloud iam service-accounts delete gke-sa@dev-project-786111.iam.gserviceaccount.com
 
 ```
 
