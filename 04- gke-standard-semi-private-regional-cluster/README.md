@@ -137,6 +137,16 @@ gcloud container clusters describe private-cluster1 --format "flattened(masterAu
 
 ```
 
+#### Connect GKE Cluster
+
+```
+
+gcloud container clusters list
+
+gcloud container clusters get-credentials private-cluster1 --region us-central1 --project dev-project-786111 --internal-ip     
+
+```
+
 ### Semi Private Cluster in other region
 
 ```

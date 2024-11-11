@@ -1,4 +1,4 @@
-# GKE Standard Private Regional Clusters
+# GKE Standard Private Zonal Clusters
 
 
 ## How cluster network isolation works
@@ -34,6 +34,26 @@ All nodes in a cluster with only private nodes are created without an external I
 
 Private Google Access is enabled automatically when you create a cluster unless you are using Shared VPC. You must not disable Private Google Access unless you are using NAT to access the internet.
 
+## What this does?
+
+This document shows how to create a Standard regional cluster to increase availability of the cluster's control plane and workloads during cluster upgrades, automated maintenance, or a zonal disruption.
+
+
+## Single-zone versus multi-zonal
+A single-zone cluster has a single control plane running in one zone. This control plane manages workloads on nodes running in the same zone. If you run a workload in a single zone, this workload is unavailable in the event of a zonal outage.
+
+A multi-zonal cluster's nodes run in multiple zones, but it has only a single replica of the control plane. If you run a workload in multiple zones and there is a zonal outage, the workload is disrupted in that zone but remains available in other zones.
+
+If you need higher availability for the control plane, consider creating a regional cluster instead. In a regional cluster, the control plane is replicated across multiple zones in a region.
+
+After you create a cluster, you cannot change it from zonal to regional, or regional to zonal.
+
+## Create a zonal cluster
+
+The minimum information that you need to specify when creating a new zonal cluster is a name, project (usually the current project), and zone (usually the default location for command line tools), using the default settings for all other values. However, there are more possible configuration settings, only some of which are described in this section and some of which can't be changed after cluster creation. Ensure that you understand which settings can't be changed after cluster creation, and that you choose the right setting when creating a cluster if you don't want to have to create it again.
+
+You can see an overview of cluster configuration options in About cluster configuration choices, and a complete list of possible options in the gcloud container clusters create and Terraform google_container_cluster reference guides.
+
 ### Private Cluster 
 
 ```
@@ -49,7 +69,7 @@ enable-private-endpoint: Specifies that access to the external endpoint is disab
 ```
 
 gcloud container clusters create private-cluster1 \
-    --region us-central1 \
+    --zone us-central1-f \
     --node-locations us-central1-c,us-central1-f \
     --release-channel "regular" \
     --cluster-version 1.30.5-gke.1443001 \
@@ -109,7 +129,7 @@ enable-private-endpoint: Specifies that access to the external endpoint is disab
 ```
 
 gcloud container clusters list
-gcloud container clusters describe private-cluster1 --region us-central1
+gcloud container clusters describe private-cluster1 --zone us-central1-f
 
 ```
 
@@ -118,7 +138,7 @@ gcloud container clusters describe private-cluster1 --region us-central1
 ```
 
 gcloud container clusters describe private-cluster1 \
-   --location=us-central1 \
+   --location=us-central1-f \
    --format="yaml(network, privateClusterConfig)"
 
 ```   
@@ -127,7 +147,7 @@ gcloud container clusters describe private-cluster1 \
 
 ```
 
-gcloud container clusters describe private-cluster1 --format "flattened(masterAuthorizedNetworksConfig.cidrBlocks[])" --region us-central1  
+gcloud container clusters describe private-cluster1 --format "flattened(masterAuthorizedNetworksConfig.cidrBlocks[])" --zone us-central1  
 
 ```
 
@@ -135,11 +155,11 @@ gcloud container clusters describe private-cluster1 --format "flattened(masterAu
 
 ```
 gcloud container clusters update private-cluster1 \
-    --region us-central1 \
+    --zone us-central1-f \
     --enable-master-authorized-networks \
     --master-authorized-networks 172.22.4.10/32,172.22.2.20/32
 
-gcloud container clusters describe private-cluster1 --format "flattened(masterAuthorizedNetworksConfig.cidrBlocks[])" --region us-central1      
+gcloud container clusters describe private-cluster1 --format "flattened(masterAuthorizedNetworksConfig.cidrBlocks[])" --zone us-central1-f      
 
 ```
 
@@ -295,7 +315,7 @@ gcloud compute instances create k8s-client \
 
 gcloud container clusters list
 
-gcloud container clusters get-credentials private-cluster1 --region us-central1 --project dev-project-786111 --internal-ip     
+gcloud container clusters get-credentials private-cluster1 --zone us-central1-f --project dev-project-786111 --internal-ip  
 
 ```
 
@@ -304,7 +324,7 @@ gcloud container clusters get-credentials private-cluster1 --region us-central1 
 
 ```
 gcloud container clusters create private-cluster2 \
-    --region us-west1 \
+    --zone us-west1-a \
     --node-locations us-west1-a,us-west1-b \
     --release-channel "regular" \
     --cluster-version 1.30.5-gke.1443001 \
@@ -361,11 +381,11 @@ gcloud compute instances create k8s-client1 \
 
 ```
 gcloud container clusters update private-cluster2 \
-    --region us-west1 \
+    --zone us-west1-a \
     --enable-master-authorized-networks \
     --master-authorized-networks 172.22.4.10/32,172.22.2.20/32
 
-gcloud container clusters describe private-cluster2 --format "flattened(masterAuthorizedNetworksConfig.cidrBlocks[])" --region us-west1      
+gcloud container clusters describe private-cluster2 --format "flattened(masterAuthorizedNetworksConfig.cidrBlocks[])" --zone us-west1-a     
 
 ```
 
@@ -375,7 +395,7 @@ gcloud container clusters describe private-cluster2 --format "flattened(masterAu
 
 gcloud container clusters list
 
-gcloud container clusters get-credentials private-cluster2 --region us-west1 --project dev-project-786111 --internal-ip    
+gcloud container clusters get-credentials private-cluster2 --zone us-west1-a --project dev-project-786111 --internal-ip    
 
 ```
 
@@ -386,7 +406,7 @@ gcloud container clusters get-credentials private-cluster2 --region us-west1 --p
 gcloud container clusters list
 
 gcloud container clusters describe private-cluster2 \
-   --location=us-west1 \
+   --location=us-west1-a \
    --format="yaml(network, privateClusterConfig)"
 
 ``` 
@@ -404,11 +424,11 @@ gcloud container clusters describe private-cluster2 \
  gcloud container clusters list
 
  gcloud container clusters update private-cluster2 \
-    --location=us-west1 \
+    --location=us-west1-a \
     --enable-master-global-access 
 
 gcloud container clusters describe private-cluster2 \
-   --location=us-west1 \
+   --location=us-west1-a \
    --format="yaml(network, privateClusterConfig)"
 
 ``` 
@@ -431,8 +451,8 @@ gcloud container clusters get-credentials private-cluster2 --region us-west1 --p
 ```
 
 gcloud container clusters create private-cluster3 \
-    --region us-central1 \
-    --node-locations us-central1-c,us-central1-f \
+    --region us-central1-c \
+    --node-locations us-central1-a,us-central1-c \
     --release-channel "regular" \
     --cluster-version 1.30.5-gke.1443001 \
     --num-nodes 1 \
@@ -472,9 +492,9 @@ Note :  --master-ipv4-cidr 172.16.2.0/28
 ```
 gcloud container clusters list
 
-gcloud container clusters delete private-cluster1 --region us-central1
-gcloud container clusters delete private-cluster2 --region us-west1
-gcloud container clusters delete private-cluster3 --region us-central1
+gcloud container clusters delete private-cluster1 --zone us-central1-f
+gcloud container clusters delete private-cluster2 --zone us-west1-a
+gcloud container clusters delete private-cluster3 --zone us-central1-c
 
 ```
 
