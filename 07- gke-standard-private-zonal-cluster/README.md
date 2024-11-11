@@ -442,7 +442,7 @@ Note : masterGlobalAccessConfig:
 
 gcloud container clusters list
 
-gcloud container clusters get-credentials private-cluster2 --region us-west1 --project dev-project-786111 --internal-ip    
+gcloud container clusters get-credentials private-cluster2 --zone us-west1-a --project dev-project-786111 --internal-ip    
 
 ```   
 
