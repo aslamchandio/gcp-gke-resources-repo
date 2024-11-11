@@ -260,6 +260,15 @@ sudo rm -rf kubecolor_0.0.25_Linux_x86_64.tar.gz
 
 ```
 
+#### Install Kubectx & Kubens
+
+```
+sudo snap install kubectx --classic
+
+kubectx
+
+```
+
 #### Create K8s-VM
 
 ```
@@ -290,7 +299,7 @@ gcloud container clusters get-credentials private-cluster1 --region us-central1 
 
 ```
 
-### Semi Private Cluster in other region
+### Private Cluster in other region without Control plane global access 
 
 
 ```
@@ -301,15 +310,15 @@ gcloud container clusters create private-cluster2 \
     --cluster-version 1.30.5-gke.1443001 \
     --num-nodes 1 \
     --enable-master-authorized-networks \
-    --master-authorized-networks 39.51.100.186/32 \
+    --master-authorized-networks 172.22.4.10/32 \
     --private-endpoint-subnetwork k8s-vpc-master-sub2-us-west1 \
     --network k8s-vpc \
     --subnetwork  k8s-vpc-sub2-us-west1  \
     --cluster-secondary-range-name pod-cidr1 \
     --services-secondary-range-name service-cidr \
     --enable-private-nodes \
+    --enable-private-endpoint \
     --enable-ip-alias \
-    --enable-master-global-access \
     --gateway-api standard \
     --enable-dns-access  \
     --enable-ip-access \
@@ -326,10 +335,98 @@ gcloud container clusters create private-cluster2 \
     --workload-pool dev-project-786111.svc.id.goog \
     --no-issue-client-certificate
 
+```
+
+#### Create K8s-VM on US-West1
+
+```
+gcloud compute instances create k8s-client1 \
+    --zone us-west1-b \
+    --image-family ubuntu-2204-lts \
+    --image-project ubuntu-os-cloud \
+    --machine-type e2-medium \
+    --boot-disk-size 50GB \
+    --boot-disk-type pd-balanced \
+    --subnet k8s-vpc-sub4-us-west1 \
+    --private-network-ip 172.22.2.20 \
+    --service-account gke-sa@dev-project-786111.iam.gserviceaccount.com \
+    --scopes=https://www.googleapis.com/auth/cloud-platform \
+    --metadata enable-oslogin=TRUE \
+    --metadata-from-file startup-script=$HOME/web-scripts/kube-script.sh \
+    --tags k8s-ssh-allow 
 
 ```
 
-### Semi Private Cluster with custom master Cidr
+#### Add master-authorized-networks  IPS
+
+```
+gcloud container clusters update private-cluster2 \
+    --region us-west1 \
+    --enable-master-authorized-networks \
+    --master-authorized-networks 172.22.4.10/32,172.22.2.20/32
+
+gcloud container clusters describe private-cluster2 --format "flattened(masterAuthorizedNetworksConfig.cidrBlocks[])" --region us-west1      
+
+```
+
+#### Connect GKE Cluster using GCP VM from Same Region US-West1
+
+```
+
+gcloud container clusters list
+
+gcloud container clusters get-credentials private-cluster2 --region us-west1 --project dev-project-786111 --internal-ip    
+
+```
+
+#### Deescribe Cluster Config File
+
+```
+
+gcloud container clusters list
+
+gcloud container clusters describe private-cluster2 \
+   --location=us-west1 \
+   --format="yaml(network, privateClusterConfig)"
+
+``` 
+
+ Note : without    --enable-master-global-access (Cluster only access from same region us-west1)
+ Cluster wont access from any other region because of disable --enable-master-global-access
+
+ masterGlobalAccessConfig: (thie setting is missing in privateClusterConfig)
+
+### For Other Regions to Connect Private Cluster
+
+ #### Update Private Cluster
+
+ ```
+ gcloud container clusters list
+
+ gcloud container clusters update private-cluster2 \
+    --location=us-west1 \
+    --enable-master-global-access 
+
+gcloud container clusters describe private-cluster2 \
+   --location=us-west1 \
+   --format="yaml(network, privateClusterConfig)"
+
+``` 
+
+Note : masterGlobalAccessConfig:
+    enabled: true
+
+ #### Connect GKE Cluster using GCP VM from Others Regions
+
+```
+
+gcloud container clusters list
+
+gcloud container clusters get-credentials private-cluster2 --region us-west1 --project dev-project-786111 --internal-ip    
+
+```   
+
+### Private Cluster with custom master Cidr
 
 ```
 
@@ -340,13 +437,14 @@ gcloud container clusters create private-cluster3 \
     --cluster-version 1.30.5-gke.1443001 \
     --num-nodes 1 \
     --enable-master-authorized-networks \
-    --master-authorized-networks 39.51.100.186/32 \
+    --master-authorized-networks 172.22.4.10/32 \
     --master-ipv4-cidr 172.16.2.0/28 \
     --network k8s-vpc \
     --subnetwork k8s-vpc-sub1-us-central1  \
     --cluster-secondary-range-name pod-cidr1 \
     --services-secondary-range-name service-cidr \
     --enable-private-nodes \
+    --enable-private-endpoint \
     --enable-ip-alias \
     --enable-master-global-access \
     --gateway-api standard \
