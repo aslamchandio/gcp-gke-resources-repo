@@ -271,7 +271,7 @@ kubectl get nodes -o wide
 
 ```
 
-# Autoscaling a Cluster in GKE Private Cluster
+### Autoscaling a Cluster in GKE Private Cluster
 
 ```
 gcloud container clusters update private-cluster1 \
