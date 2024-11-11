@@ -114,6 +114,15 @@ gcloud container clusters describe public-cluster1 --format "flattened(masterAut
 
 ```
 
+#### Check Pod Cidr on Nodes
+
+```
+kubectl get nodes gke-public-cluster1-default-pool-6ce20222-dxs3 -o yaml | grep CIDR
+
+kubectl get nodes gke-public-cluster1-default-pool-c88fa138-3437 -o yaml | grep CIDR
+      
+```
+
 ### Public Cluster in other region
 
 ```
